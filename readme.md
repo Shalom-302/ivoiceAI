@@ -25,7 +25,7 @@ Cette application Streamlit utilise l'API Google Gemini pour extraire des inform
 
 1. Clonez ce dépôt :
    ```bash
-   git clone https://github.com/votre-utilisateur/votre-depot.git
+   git clone https://github.com/Shalom-302/ivoiceAI.git
    cd votre-depot
    ```
 
@@ -75,7 +75,7 @@ Cette application Streamlit utilise l'API Google Gemini pour extraire des inform
 ```
 votre-depot/
 ├── .env
-├── app.py
+├── main.py
 ├── requirements.txt
 ├── README.md
 └── .gitignore
@@ -100,7 +100,7 @@ Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de 
 
 ## **Fichiers nécessaires pour GitHub**
 
-### 1. **`app.py`**
+### 1. **`main.py`**
 C'est votre script Streamlit. Assurez-vous qu'il est bien structuré et fonctionnel.
 
 ### 2. **`requirements.txt`**
@@ -128,31 +128,7 @@ Ajoutez une licence pour votre projet. Par exemple, une licence MIT :
 ```text
 MIT License
 
-Copyright (c) 2023 Votre Nom
+Copyright (c) 2024 Shalom Tehe
 
 Permission is hereby granted...
 ```
-
----
-
-## **Déploiement sur Streamlit Cloud**
-
-1. **Poussez votre code sur GitHub** :
-   - Créez un nouveau dépôt sur GitHub.
-   - Ajoutez les fichiers (`app.py`, `requirements.txt`, `README.md`, etc.).
-   - Poussez votre code :
-     ```bash
-     git init
-     git add .
-     git commit -m "Initial commit"
-     git branch -M main
-     git remote add origin https://github.com/votre-utilisateur/votre-depot.git
-     git push -u origin main
-     ```
-
-2. **Déployez sur Streamlit Cloud** :
-   - Suivez les étapes décrites dans le `README.md` pour déployer votre application.
-
----
-
-Avec ce `README.md` et cette structure de projet, votre dépôt GitHub sera bien organisé et prêt pour le déploiement sur Streamlit Cloud. Bonne chance avec votre projet ! 🚀

@@ -37,12 +37,21 @@ if uploaded_file is not None:
     # Définir le prompt
     prompt = """
     Extrais les informations suivantes de cette facture :
+   Extrais toutes les informations de cette facture. Voici les champs à extraire :
     - Titre
+    - Date
     - Entreprise
     - Compte
     - Semaine
+    - Opération
+    - Produit
+    - Site
+    - Numéro de camion (liste tous les numéros de camion)
+    - Tonnage (liste tous les tonnages)
+    - Observations
     - Total
     - Responsables
+    - Magasinier
     """
     
     # Envoyer l'image et le prompt au modèle

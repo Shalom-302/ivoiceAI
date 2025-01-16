@@ -1,3 +1,6 @@
 opencv-python
 pytesseract
 streamlit
+google-generativeai
+python-dotenv
+Pillow

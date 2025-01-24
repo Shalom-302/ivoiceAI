@@ -5,133 +5,147 @@ import os
 from dotenv import load_dotenv
 
 # Charger les variables d'environnement
-load_dotenv()  # Assurez-vous que le fichier .env est dans le même répertoire
-
-# Récupérer la clé API
+load_dotenv()
 api_key = os.getenv("GOOGLE_API_KEY")
 
-# Vérifier si la clé API est chargée
 if not api_key:
     st.error("La clé API Google n'a pas été trouvée dans le fichier .env.")
     st.stop()
 
-# Configurer l'API Gemini
 genai.configure(api_key=api_key)
 
-# Interface Streamlit
 st.title("Extraction de factures avec Gemini Vision")
 
-# Upload de l'image
+# Ajout du sélecteur de format de sortie
+output_format = st.radio(
+    "Format de sortie :",
+    options=["JSON", "Texte brut"],
+    index=0
+)
+
 uploaded_file = st.file_uploader("Téléchargez une image de facture", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-    # Ouvrir l'image
     image = Image.open(uploaded_file)
-    
-    # Afficher l'image
     st.image(image, caption='Image téléchargée', use_container_width=True)
     
-    # Initialiser le modèle Gemini
     model = genai.GenerativeModel('gemini-1.5-flash')
     
-    # Définir le prompt
-    prompt = """
-   Analyse l'image d'un document de type "{document_type}". Ce document est une sorte de récapitulatif journalier.
-
-**Structure du document:**
-Le document contient généralement un en-tête, un tableau de données, un total et un pied de page.
-* L'en-tête contient des informations générales sur le document.
-* Le tableau contient des données structurées sur des items (ex: camions).
-* Le total est une somme des données du tableau.
-* Le pied de page contient des informations sur les responsables et leurs signatures.
-
-**Instructions d'extraction:**
-
-1. **En-tête:**
-    * Extrais le titre du document.
-    * Identifie et extrais le nom de l'entreprise (responsable du document).
-    * Extrait la date du document.
-    * Extrait le nom du client (si présent).
-    * Extrait la semaine concernée (si présente).
-    * Identifie l'opération effectuée (si présente).
-    * Extrait le nom du produit transporté (si présent).
-    * Extrait le site concerné (si présent).
-
-2. **Tableau:**
-    * Extrais les données du tableau. Chaque ligne contient:
-        * un numéro d'ordre (N°)
-        * un identifiant de l'item (ex: un numéro de camion)
-        * une description de l'item (ex: type de produit)
-        * une valeur (ex: un tonnage)
-        * une observation (si présente)
-    * Si une entrée de la description de l'item est représentée par un symbole comme "{symbol_replacement}", remplace-le par la description complète trouvée dans l'en-tête ou ailleurs si c'est déductible.
-
-3. **Total:**
-    * Extrait la valeur du total.
-
-4. **Pied de page:**
-    * Identifie les entreprises (responsable du document et celle du destinataire) pour les signatures.
-    * Extrait le nom et la date du signataire du MAGASINIER si existant.
-    * Extrait et liste tout autre signataire avec son rôle.
-
+    # Définition dynamique du prompt selon le format
+    if output_format == "JSON":
+        format_instructions = """
 **Format de Sortie:**
-Fournis la réponse dans un format texte structuré, de façon claire et lisible, en gardant l'organisation du document original. Utilise un format de tableau pour les données de items, comme dans l'original.
+Fournis la réponse en format JSON valide avec la structure suivante :
+{
+    "en_tete": {
+        "titre": "string",
+        "entreprise": "string",
+        "date": "string",
+        "client": "string",
+        "semaine": "string",
+        "operation": "string",
+        "produit": "string",
+        "site": "string"
+    },
+    "tableau": [
+        {
+            "numero": "int",
+            "identifiant": "string",
+            "description": "string",
+            "valeur": "float",
+            "observation": "string"
+        }
+    ],
+    "total": "float",
+    "pied_de_page": {
+        "entreprises": ["string"],
+        "magasinier": {
+            "nom": "string",
+            "date": "string"
+        },
+        "autres_signataires": [
+            {
+                "nom": "string",
+                "role": "string"
+            }
+        ]
+    }
+}
+"""
+    else:
+        format_instructions = """
+**Format de Sortie:**
+Fournis la réponse dans un format texte structuré avec :
+- Des sections clairement identifiées (En-tête, Tableau, Total, Pied de page)
+- Des tableaux formatés en Markdown
+- Des listes d'informations organisées
 
-Exemple (incomplet):
-
+Exemple de structure :
 **En-tête:**
-Titre: {document_title}
-Entreprise: {document_enterprise}
+- Titre: ...
+- Entreprise: ...
+- Date: ...
 ...
 
 **Tableau:**
-| N° | {item_identifier_label} | {item_description_label} | {item_value_label} | observation |
+| N° | Identifiant | Description | Valeur | Observation |
 |---|---|---|---|---|
 | 1 | ... | ... | ... | ... |
-| 2 | ... | ... | ... | ... |
-...
 
-**Total:**
-Total: ...
+**Total:** ...
 
 **Pied de page:**
-Entreprise: {responsible_enterprise}
-Responsable: ...
+- Entreprises: [...]
+- Magasinier: ...
+...
+"""
 
-Entreprise: {destinataire_enterprise}
-Magasinier: ...
-Date: ...
-Responsable: ...
+    prompt = f"""
+Analyse l'image d'un document de type "{{document_type}}". Ce document est une sorte de récapitulatif journalier.
 
-**Variables à remplacer:**
+**Structure du document:**
+Le document contient généralement :
+- Un en-tête avec des informations générales
+- Un tableau de données structurées
+- Un total global
+- Un pied de page avec signatures
 
-* `{document_type}`: Le type de document (ex: "récap journalier", "feuille de chargement", etc.).
-* `{symbol_replacement}`: Le symbole utilisé pour représenter une valeur manquante ou à remplacer (ex: " ", "–", etc.).
-* `{document_title}`: Placeholder pour le titre du document (à adapter en fonction du format).
-* `{document_enterprise}`: Placeholder pour le nom de l'entreprise du document.
-* `{item_identifier_label}`: Label utilisé pour identifier l'item (ex: "Numéro de camion", "Référence", etc.).
-* `{item_description_label}`: Label utilisé pour la description de l'item (ex: "produit", "type", etc.).
-* `{item_value_label}`: Label utilisé pour la valeur (ex: "tonnage", "quantité", etc.).
-* `{responsible_enterprise}`: Placeholder pour le nom de l'entreprise du responsable.
-* `{destinataire_enterprise}`: Placeholder pour le nom de l'entreprise destinataire.
+**Instructions d'extraction:**
+1. En-tête:
+   - Extrait toutes les métadonnées visibles
+   - Identifie les éléments contextuels importants
 
-**Comment utiliser ce template:**
+2. Tableau:
+   - Repère toutes les lignes et colonnes
+   - Conserve l'ordre original des données
+   - Corrige les symboles incomplets
 
-1.  **Adaptation:**  Adaptez les placeholders et les instructions en fonction des documents que vous souhaitez analyser. Vous devrez probablement ajuster `{item_identifier_label}`, `{item_description_label}` et `{item_value_label}` selon le contexte du tableau.
-2.  **Entrée:** Remplissez les variables et soumettez le prompt au modèle d'IA avec l'image correspondante.
-3.  **Extraction:** Le modèle traitera l'image, extraira les informations, puis les présentera dans un format textuel structuré.
+3. Total:
+   - Localise et vérifie le calcul
 
-**Avantages du template :**
+4. Pied de page:
+   - Identifie toutes les entités responsables
+   - Extrait les détails des signatures
 
-*   **Réutilisable:** Vous pouvez utiliser ce template pour différents documents du même type, en modifiant seulement quelques variables.
-*   **Personnalisable:** Vous pouvez ajuster les instructions et les placeholders pour correspondre au mieux à vos besoins.
-*   **Clair et structuré:** Il fournit une base solide pour l'extraction de données, en s'assurant que le modèle sait quoi extraire et comment le formater.
+{format_instructions}
 
-    """
-    
-    # Envoyer l'image et le prompt au modèle
+**Consignes importantes:**
+- Sois précis et exhaustif
+- Conserve la structure originale
+- Ne modifie pas les valeurs
+- Signale les éléments ambigus
+"""
+
     response = model.generate_content([prompt, image])
     
-    # Afficher la réponse
-    st.subheader("Informations extraites :")
-    st.write(response.text)
+    st.subheader("Résultat de l'analyse")
+    
+    if output_format == "JSON":
+        try:
+            # Tentative de formatage pour une meilleure lisibilité
+            json_data = eval(response.text)
+            st.json(json_data)
+        except:
+            st.write(response.text)
+    else:
+        st.markdown(response.text)

@@ -33,7 +33,7 @@ if uploaded_file is not None:
     
     # Définition dynamique du prompt selon le format
     if output_format == "JSON":
-        format_instructions = """
+        format_instructions = """ 
 **Format de Sortie:**
 Fournis la réponse en format JSON valide avec la structure suivante :
 {
@@ -101,14 +101,15 @@ Exemple de structure :
 """
 
     prompt = f"""
-Analyse l'image d'un document de type "{{document_type}}". Ce document est une sorte de récapitulatif journalier.
+Analyse l'image d'un document de type "{{document_type}}". Ce document est une sorte de récapitulatif journalier ou une Carte Nationale d'Identité (CNI).
 
 **Structure du document:**
 Le document contient généralement :
 - Un en-tête avec des informations générales
-- Un tableau de données structurées
-- Un total global
-- Un pied de page avec signatures
+- Un tableau de données structurées (pour une facture)
+- Un total global (pour une facture)
+- Un pied de page avec signatures (pour une facture)
+- Des informations personnelles (pour une CNI)
 
 **Instructions d'extraction:**
 1. En-tête:
@@ -126,6 +127,20 @@ Le document contient généralement :
 4. Pied de page:
    - Identifie toutes les entités responsables
    - Extrait les détails des signatures
+
+5. CNI:
+   - documentType (type de document)
+   - number (numéro de la CNI)
+   - nationality (nationalité)
+   - firstName (prénom)
+   - lastName (nom)
+   - dateOfBirth (date de naissance)
+   - sex (sexe)
+   - height (taille)
+   - placeOfBirth (lieu de naissance)
+   - issueDate (date d'émission)
+   - expiryDate (date d'expiration)
+   - placeOfIssue (lieu d'émission)
 
 {format_instructions}
 
